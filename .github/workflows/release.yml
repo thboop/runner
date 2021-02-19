@@ -2,12 +2,11 @@ name: Runner CD
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-    - releaseVersion
   
 jobs:
   check:
+    outputs:
+      runner-version: ${{ steps.check-version.outputs.version }}
     if: startsWith(github.ref, 'refs/heads/releases/') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -17,18 +16,14 @@ jobs:
     # Query GitHub release ensure version is not used 
     - name: Check version
       uses: actions/github-script@0.3.0
+      id: check-version
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           const core = require('@actions/core')
           const fs = require('fs');
           const runnerVersion = fs.readFileSync('${{ github.workspace }}/src/runnerversion', 'utf8').replace(/\n$/g, '')
-          const releaseVersion = fs.readFileSync('${{ github.workspace }}/releaseVersion', 'utf8').replace(/\n$/g, '')
-          if (runnerVersion != releaseVersion) {
-            console.log('Request Release Version: ' + releaseVersion + '\nCurrent Runner Version: ' + runnerVersion)
-            core.setFailed('Version mismatch! Make sure ./releaseVersion match ./src/runnerVersion')
-            return
-          }
+          core.setOutput('version', runnerVersion);
           try {
             const release = await github.repos.getReleaseByTag({
               owner: '${{ github.event.repository.owner.name }}',
@@ -42,7 +37,6 @@ jobs:
               throw e
             }
           }
-  
   build:
     needs: check
     outputs:
@@ -121,11 +115,16 @@ jobs:
       name: Compute SHA256
       working-directory: _package
   release:
-    needs: build
+    needs: [build, check]
     runs-on: ubuntu-latest
     steps:
 
     - uses: actions/checkout@v2
+    
+    - name: Create Release Branch
+      run: |
+        git checkout -b releases/v${{ needs.check.outputs.runner-version }}
+        git push -u origin HEAD
 
     # Download runner package tar.gz/zip produced by 'build' job
     - name: Download Artifact
@@ -154,7 +153,7 @@ jobs:
           core.setOutput('version', runnerVersion);
           core.setOutput('note', releaseNote);  
     # Create GitHub release
-    - uses: actions/create-release@master
+    - uses: actions/create-release@v1
       id: createRelease
       name: Create ${{ steps.releaseNote.outputs.version }} Runner Release
       env:
@@ -216,3 +215,10 @@ jobs:
         asset_path: ${{ github.workspace }}/actions-runner-linux-arm64-${{ steps.releaseNote.outputs.version }}.tar.gz
         asset_name: actions-runner-linux-arm64-${{ steps.releaseNote.outputs.version }}.tar.gz
         asset_content_type: application/octet-stream
+        
+#  pipeline:
+#    needs: release
+#    environment: release
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: 
