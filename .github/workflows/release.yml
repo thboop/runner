@@ -224,7 +224,7 @@ jobs:
     steps:
       - name: notify slack on success
         run: |
-          curl -X POST -H 'Content-type: application/json' --data '{"text":":rocket-intensifies: Release succesfully created for actions-runner ${{ steps.releaseNote.outputs.version }}. Run `.actions release-runner ${{ steps.releaseNote.outputs.version }}` in Slack to kick off the release!"}' $SLACK_WEBHOOK
+          curl -X POST -H 'Content-type: application/json' --data '{"text":":rocket-intensifies: Release successfully created for actions-runner ${{ steps.releaseNote.outputs.version }}. Run `.actions release-runner ${{ steps.releaseNote.outputs.version }}` in Slack to kick off the release!"}' $SLACK_WEBHOOK
         env: 
           SLACK_WEBHOOK: ${{ secrets.SLACK }}
         
