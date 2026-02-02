@@ -147,7 +147,7 @@ namespace GitHub.Runner.Common.Tests.Worker
             // Arrange
             _hc = new TestHostContext(this, "UpdateRegistryAuth_GhcrIo_HostedServer_SetsCredentials");
             _ec = new Mock<IExecutionContext>();
-            
+
             var globalContext = new GlobalContext();
             _ec.Setup(x => x.Global).Returns(globalContext);
             _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
@@ -191,7 +191,7 @@ namespace GitHub.Runner.Common.Tests.Worker
             // Arrange
             _hc = new TestHostContext(this, "UpdateRegistryAuth_GhcrIo_GhesServer_DoesNotSetCredentials");
             _ec = new Mock<IExecutionContext>();
-            
+
             var globalContext = new GlobalContext();
             _ec.Setup(x => x.Global).Returns(globalContext);
             _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
@@ -235,7 +235,7 @@ namespace GitHub.Runner.Common.Tests.Worker
             // Arrange
             _hc = new TestHostContext(this, "UpdateRegistryAuth_GhcrIo_NullGitHubUrl_DoesNotSetCredentials");
             _ec = new Mock<IExecutionContext>();
-            
+
             var globalContext = new GlobalContext();
             _ec.Setup(x => x.Global).Returns(globalContext);
             _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
@@ -279,7 +279,7 @@ namespace GitHub.Runner.Common.Tests.Worker
             // Arrange
             _hc = new TestHostContext(this, "UpdateRegistryAuth_DockerHub_HostedServer_DoesNotSetCredentials");
             _ec = new Mock<IExecutionContext>();
-            
+
             var globalContext = new GlobalContext();
             _ec.Setup(x => x.Global).Returns(globalContext);
             _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
@@ -323,7 +323,7 @@ namespace GitHub.Runner.Common.Tests.Worker
             // Arrange
             _hc = new TestHostContext(this, "UpdateRegistryAuth_ContainersPkgGitHubCom_HostedServer_SetsCredentials");
             _ec = new Mock<IExecutionContext>();
-            
+
             var globalContext = new GlobalContext();
             _ec.Setup(x => x.Global).Returns(globalContext);
             _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
