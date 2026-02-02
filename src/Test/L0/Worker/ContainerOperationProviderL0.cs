@@ -139,6 +139,226 @@ namespace GitHub.Runner.Common.Tests.Worker
             containerOperationProvider.Initialize(_hc);
         }
 
+        [Fact]
+        [Trait("Level", "L0")]
+        [Trait("Category", "Worker")]
+        public void UpdateRegistryAuth_GhcrIo_HostedServer_SetsCredentials()
+        {
+            // Arrange
+            _hc = new TestHostContext(this, "UpdateRegistryAuth_GhcrIo_HostedServer_SetsCredentials");
+            _ec = new Mock<IExecutionContext>();
+            
+            var globalContext = new GlobalContext();
+            _ec.Setup(x => x.Global).Returns(globalContext);
+            _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
+            _ec.Setup(x => x.GetGitHubContext("token")).Returns("test-token");
+
+            var configStore = new Mock<IConfigurationStore>();
+            var settings = new RunnerSettings
+            {
+                GitHubUrl = "https://github.com",
+                IsHostedServer = true
+            };
+            configStore.Setup(x => x.GetSettings()).Returns(settings);
+            _hc.SetSingleton<IConfigurationStore>(configStore.Object);
+
+            var dockerManager = new Mock<IDockerCommandManager>();
+            _hc.SetSingleton<IDockerCommandManager>(dockerManager.Object);
+
+            var jobContainer = new GitHub.DistributedTask.Pipelines.JobContainer()
+            {
+                Image = "ghcr.io/owner/image:latest"
+            };
+            var container = new ContainerInfo(_hc, jobContainer);
+
+            // Act
+            var method = typeof(ContainerOperationProvider).GetMethod("UpdateRegistryAuthForGitHubToken",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var provider = new ContainerOperationProvider();
+            provider.Initialize(_hc);
+            method.Invoke(provider, new object[] { _ec.Object, container });
+
+            // Assert
+            Assert.Equal("test-actor", container.RegistryAuthUsername);
+            Assert.Equal("test-token", container.RegistryAuthPassword);
+        }
+
+        [Fact]
+        [Trait("Level", "L0")]
+        [Trait("Category", "Worker")]
+        public void UpdateRegistryAuth_GhcrIo_GhesServer_DoesNotSetCredentials()
+        {
+            // Arrange
+            _hc = new TestHostContext(this, "UpdateRegistryAuth_GhcrIo_GhesServer_DoesNotSetCredentials");
+            _ec = new Mock<IExecutionContext>();
+            
+            var globalContext = new GlobalContext();
+            _ec.Setup(x => x.Global).Returns(globalContext);
+            _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
+            _ec.Setup(x => x.GetGitHubContext("token")).Returns("test-token");
+
+            var configStore = new Mock<IConfigurationStore>();
+            var settings = new RunnerSettings
+            {
+                GitHubUrl = "https://ghes.company.com",
+                IsHostedServer = false
+            };
+            configStore.Setup(x => x.GetSettings()).Returns(settings);
+            _hc.SetSingleton<IConfigurationStore>(configStore.Object);
+
+            var dockerManager = new Mock<IDockerCommandManager>();
+            _hc.SetSingleton<IDockerCommandManager>(dockerManager.Object);
+
+            var jobContainer = new GitHub.DistributedTask.Pipelines.JobContainer()
+            {
+                Image = "ghcr.io/owner/image:latest"
+            };
+            var container = new ContainerInfo(_hc, jobContainer);
+
+            // Act
+            var method = typeof(ContainerOperationProvider).GetMethod("UpdateRegistryAuthForGitHubToken",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var provider = new ContainerOperationProvider();
+            provider.Initialize(_hc);
+            method.Invoke(provider, new object[] { _ec.Object, container });
+
+            // Assert - credentials should NOT be set for GHES
+            Assert.Null(container.RegistryAuthUsername);
+            Assert.Null(container.RegistryAuthPassword);
+        }
+
+        [Fact]
+        [Trait("Level", "L0")]
+        [Trait("Category", "Worker")]
+        public void UpdateRegistryAuth_GhcrIo_NullGitHubUrl_DoesNotSetCredentials()
+        {
+            // Arrange
+            _hc = new TestHostContext(this, "UpdateRegistryAuth_GhcrIo_NullGitHubUrl_DoesNotSetCredentials");
+            _ec = new Mock<IExecutionContext>();
+            
+            var globalContext = new GlobalContext();
+            _ec.Setup(x => x.Global).Returns(globalContext);
+            _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
+            _ec.Setup(x => x.GetGitHubContext("token")).Returns("test-token");
+
+            var configStore = new Mock<IConfigurationStore>();
+            var settings = new RunnerSettings
+            {
+                GitHubUrl = null, // GitHubUrl not set
+                IsHostedServer = true // But IsHostedServer might be true
+            };
+            configStore.Setup(x => x.GetSettings()).Returns(settings);
+            _hc.SetSingleton<IConfigurationStore>(configStore.Object);
+
+            var dockerManager = new Mock<IDockerCommandManager>();
+            _hc.SetSingleton<IDockerCommandManager>(dockerManager.Object);
+
+            var jobContainer = new GitHub.DistributedTask.Pipelines.JobContainer()
+            {
+                Image = "ghcr.io/owner/image:latest"
+            };
+            var container = new ContainerInfo(_hc, jobContainer);
+
+            // Act
+            var method = typeof(ContainerOperationProvider).GetMethod("UpdateRegistryAuthForGitHubToken",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var provider = new ContainerOperationProvider();
+            provider.Initialize(_hc);
+            method.Invoke(provider, new object[] { _ec.Object, container });
+
+            // Assert - credentials should NOT be set when GitHubUrl is null
+            Assert.Null(container.RegistryAuthUsername);
+            Assert.Null(container.RegistryAuthPassword);
+        }
+
+        [Fact]
+        [Trait("Level", "L0")]
+        [Trait("Category", "Worker")]
+        public void UpdateRegistryAuth_DockerHub_HostedServer_DoesNotSetCredentials()
+        {
+            // Arrange
+            _hc = new TestHostContext(this, "UpdateRegistryAuth_DockerHub_HostedServer_DoesNotSetCredentials");
+            _ec = new Mock<IExecutionContext>();
+            
+            var globalContext = new GlobalContext();
+            _ec.Setup(x => x.Global).Returns(globalContext);
+            _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
+            _ec.Setup(x => x.GetGitHubContext("token")).Returns("test-token");
+
+            var configStore = new Mock<IConfigurationStore>();
+            var settings = new RunnerSettings
+            {
+                GitHubUrl = "https://github.com",
+                IsHostedServer = true
+            };
+            configStore.Setup(x => x.GetSettings()).Returns(settings);
+            _hc.SetSingleton<IConfigurationStore>(configStore.Object);
+
+            var dockerManager = new Mock<IDockerCommandManager>();
+            _hc.SetSingleton<IDockerCommandManager>(dockerManager.Object);
+
+            var jobContainer = new GitHub.DistributedTask.Pipelines.JobContainer()
+            {
+                Image = "ubuntu:latest"
+            };
+            var container = new ContainerInfo(_hc, jobContainer);
+
+            // Act
+            var method = typeof(ContainerOperationProvider).GetMethod("UpdateRegistryAuthForGitHubToken",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var provider = new ContainerOperationProvider();
+            provider.Initialize(_hc);
+            method.Invoke(provider, new object[] { _ec.Object, container });
+
+            // Assert - credentials should NOT be set for Docker Hub images
+            Assert.Null(container.RegistryAuthUsername);
+            Assert.Null(container.RegistryAuthPassword);
+        }
+
+        [Fact]
+        [Trait("Level", "L0")]
+        [Trait("Category", "Worker")]
+        public void UpdateRegistryAuth_ContainersPkgGitHubCom_HostedServer_SetsCredentials()
+        {
+            // Arrange
+            _hc = new TestHostContext(this, "UpdateRegistryAuth_ContainersPkgGitHubCom_HostedServer_SetsCredentials");
+            _ec = new Mock<IExecutionContext>();
+            
+            var globalContext = new GlobalContext();
+            _ec.Setup(x => x.Global).Returns(globalContext);
+            _ec.Setup(x => x.GetGitHubContext("actor")).Returns("test-actor");
+            _ec.Setup(x => x.GetGitHubContext("token")).Returns("test-token");
+
+            var configStore = new Mock<IConfigurationStore>();
+            var settings = new RunnerSettings
+            {
+                GitHubUrl = "https://github.com",
+                IsHostedServer = true
+            };
+            configStore.Setup(x => x.GetSettings()).Returns(settings);
+            _hc.SetSingleton<IConfigurationStore>(configStore.Object);
+
+            var dockerManager = new Mock<IDockerCommandManager>();
+            _hc.SetSingleton<IDockerCommandManager>(dockerManager.Object);
+
+            var jobContainer = new GitHub.DistributedTask.Pipelines.JobContainer()
+            {
+                Image = "containers.pkg.github.com/owner/image:latest"
+            };
+            var container = new ContainerInfo(_hc, jobContainer);
+
+            // Act
+            var method = typeof(ContainerOperationProvider).GetMethod("UpdateRegistryAuthForGitHubToken",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var provider = new ContainerOperationProvider();
+            provider.Initialize(_hc);
+            method.Invoke(provider, new object[] { _ec.Object, container });
+
+            // Assert
+            Assert.Equal("test-actor", container.RegistryAuthUsername);
+            Assert.Equal("test-token", container.RegistryAuthPassword);
+        }
+
         private void Setup([CallerMemberName] string testName = "")
         {
             containers.Add(new ContainerInfo() { ContainerImage = "ubuntu:16.04" });
