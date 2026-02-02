@@ -157,7 +157,7 @@ namespace GitHub.Runner.Common
                             else if (ignoreNotFoundError && responseStatus == System.Net.HttpStatusCode.NotFound)
                             {
                                 // Treat 404 as success for delete operations - runner was already removed from server
-                                Trace.Info($"Runner was already deleted from the server (404 NotFound) from '{requestType.ToString()} {githubApiUrl}' ({githubRequestId})");
+                                Trace.Info($"Runner was already deleted from the server (404 NotFound) for '{requestType.ToString()} {githubApiUrl}' ({githubRequestId})");
                                 return default(T);
                             }
                             else
