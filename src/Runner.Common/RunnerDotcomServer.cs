@@ -106,10 +106,10 @@ namespace GitHub.Runner.Common
         public async Task DeleteRunnerAsync(string githubUrl, string githubToken, ulong runnerId)
         {
             var githubApiUrl = $"{GetEntityUrl(githubUrl)}/runners/{runnerId}";
-            await RetryRequest<DistributedTask.WebApi.Runner>(githubApiUrl, githubToken, RequestType.Delete, 3, "Failed to delete agent");
+            await RetryRequest<DistributedTask.WebApi.Runner>(githubApiUrl, githubToken, RequestType.Delete, 3, "Failed to delete agent", ignoreNotFoundError: true);
         }
 
-        private async Task<T> RetryRequest<T>(string githubApiUrl, string githubToken, RequestType requestType, int maxRetryAttemptsCount = 5, string errorMessage = null, StringContent body = null)
+        private async Task<T> RetryRequest<T>(string githubApiUrl, string githubToken, RequestType requestType, int maxRetryAttemptsCount = 5, string errorMessage = null, StringContent body = null, bool ignoreNotFoundError = false)
         {
             int retry = 0;
             while (true)
@@ -153,6 +153,12 @@ namespace GitHub.Runner.Common
                                 Trace.Info($"Http response code: {response.StatusCode} from '{requestType.ToString()} {githubApiUrl}' ({githubRequestId})");
                                 var jsonResponse = await response.Content.ReadAsStringAsync();
                                 return StringUtil.ConvertFromJson<T>(jsonResponse);
+                            }
+                            else if (ignoreNotFoundError && responseStatus == System.Net.HttpStatusCode.NotFound)
+                            {
+                                // Treat 404 as success for delete operations - runner was already removed from server
+                                Trace.Info($"Runner was already deleted from the server (404 NotFound) for '{requestType.ToString()} {githubApiUrl}' ({githubRequestId})");
+                                return default(T);
                             }
                             else
                             {

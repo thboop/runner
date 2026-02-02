@@ -447,5 +447,62 @@ namespace GitHub.Runner.Common.Tests.Listener.Configuration
             }
         }
 #endif
+
+        [Fact]
+        [Trait("Level", "L0")]
+        [Trait("Category", "ConfigurationManagement")]
+        public async Task UnconfigureRunnerSucceedsWhenRunnerAlreadyDeletedFromServer()
+        {
+            using (TestHostContext tc = CreateTestContext())
+            {
+                Tracing trace = tc.GetTrace();
+
+                trace.Info("Creating config manager");
+                IConfigurationManager configManager = new ConfigurationManager();
+                configManager.Initialize(tc);
+
+                trace.Info("Preparing command line arguments for remove");
+                var command = new CommandSettings(
+                    tc,
+                    new[]
+                    {
+                       "remove",
+                       "--token", _expectedToken,
+                       "--unattended",
+                    });
+
+                trace.Info("Setting up mock runner settings with UseRunnerAdminFlow");
+                _configMgrAgentSettings = new RunnerSettings
+                {
+                    AgentId = 1,
+                    AgentName = _expectedAgentName,
+                    GitHubUrl = "https://github.com/myorg/myrepo",
+                    UseRunnerAdminFlow = true,
+                    ServerUrl = _expectedServerUrl,
+                };
+
+                _store.Setup(x => x.IsConfigured()).Returns(true);
+                _store.Setup(x => x.HasCredentials()).Returns(true);
+                _store.Setup(x => x.IsServiceConfigured()).Returns(false);
+                _store.Setup(x => x.DeleteCredential());
+                _store.Setup(x => x.DeleteSettings());
+                _rsaKeyManager.Setup(x => x.DeleteKey());
+
+                // Mock DeleteRunnerAsync to succeed (simulating 404 being handled)
+                _dotcomServer.Setup(x => x.DeleteRunnerAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ulong>()))
+                    .Returns(Task.CompletedTask);
+
+                trace.Info("Running UnconfigureAsync");
+                await configManager.UnconfigureAsync(command);
+
+                trace.Info("Verifying DeleteRunnerAsync was called");
+                _dotcomServer.Verify(x => x.DeleteRunnerAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ulong>()), Times.Once);
+
+                trace.Info("Verifying local config was deleted");
+                _store.Verify(x => x.DeleteCredential(), Times.Once);
+                _store.Verify(x => x.DeleteSettings(), Times.Once);
+                _rsaKeyManager.Verify(x => x.DeleteKey(), Times.Once);
+            }
+        }
     }
 }
